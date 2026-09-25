@@ -40,6 +40,13 @@ The data protection key ring lives on a named volume at `DataProtection:KeyRingP
 before the volume is mounted over it — a fresh named volume takes its ownership from the image, and
 the container does not run as root.
 
+## Health
+
+Two endpoints, because the two questions have different answers. `/health/live` carries no checks and
+says the process is up; it is what compose probes, since restarting the container cannot fix a
+database that is down. `/health/ready` runs the database check and is what a load balancer should ask
+before sending traffic.
+
 ## Logs
 
 The framework's own console logger, in its default format, and one combined line per request through

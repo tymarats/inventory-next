@@ -54,6 +54,13 @@ services:
       DataProtection__KeyRingPath: /var/lib/inventory/keys
     volumes:
       - data_protection_keys:/var/lib/inventory/keys
+    healthcheck:
+      # Liveness, not readiness: a database outage must not restart the application.
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy

@@ -136,10 +136,12 @@ public class AuthTests(InventoryApplication app) : IClassFixture<InventoryApplic
         Assert.Contains("text/html", response.Content.Headers.ContentType?.MediaType);
     }
 
-    [Fact]
-    public async Task Health_check_answers_without_signing_in()
+    [Theory]
+    [InlineData("/health/live")]
+    [InlineData("/health/ready")]
+    public async Task Health_checks_answer_without_signing_in(string path)
     {
-        var response = await Client().GetAsync("/health-check");
+        var response = await Client().GetAsync(path);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
