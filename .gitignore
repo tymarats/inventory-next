@@ -1,0 +1,17 @@
+.idea
+.gradle
+.DS_Store
+debug.log
+.vs
+bin
+obj
+*.user
+.claude
+node_modules
+.keys/
+*.sql.gz
+appsettings.Production.json
+server/Codaxy.Inventory/wwwroot/*
+!server/Codaxy.Inventory/wwwroot/.gitkeep
+client/dist/
+coverage/

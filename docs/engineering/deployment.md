@@ -1,0 +1,62 @@
+# Deployment
+
+One image, built by a three-stage Dockerfile: node builds the client into the path the server stage
+publishes from, the SDK publishes the server, and the ASP.NET runtime image carries the result. It
+runs as `$APP_UID`, not root.
+
+## Compose
+
+**`docker compose up` brings up infrastructure only** — PostgreSQL and Mailpit — which is what running
+the application from an IDE needs. **`docker compose --profile app up` runs the built image beside
+them.**
+
+Ports are deliberately not the original application's, so both stacks can run at once: PostgreSQL on
+5442, the application on 8090, Mailpit's web interface on 8025 and its relay on 1025.
+
+## Configuration and secrets
+
+`appsettings.json` carries defaults only, and **the repository holds no credentials.** A setting that
+must be supplied is present and empty rather than filled with a placeholder string: a placeholder is a
+valid value, so it reaches whatever consumes it and comes back as a parse error instead of "this is
+not configured". `ConnectionStrings:PostgreSQL` is checked at startup and names itself when it is
+missing.
+Google is off until a client id and secret arrive, which in compose is through the environment:
+
+```
+GOOGLE_CLIENT_ID=… GOOGLE_CLIENT_SECRET=… docker compose --profile app up
+```
+
+`appsettings.Development.json` is committed and holds no secret: the compose connection string,
+Mailpit and one-time codes on, so a fresh checkout runs. Development credentials live in user
+secrets; see [auth.md](auth.md).
+
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED=true` is set in the image rather than configured in code: it
+enables the forwarded-headers middleware for `X-Forwarded-For` and `X-Forwarded-Proto` with the
+known-proxy lists cleared, which is what running behind a reverse proxy needs and what running
+without one should not have.
+
+The data protection key ring lives on a named volume at `DataProtection:KeyRingPath`
+(`/var/lib/inventory/keys`). The image creates that directory and gives it to the application's user
+before the volume is mounted over it — a fresh named volume takes its ownership from the image, and
+the container does not run as root.
+
+## Logs
+
+Structured JSON to stdout through `AddJsonConsole`, and one combined line per request through the
+framework's own HTTP logging — method, path, status, duration, no headers and no bodies, because a
+request body here is a sign-in attempt. No logging library: nothing yet needs a sink the framework
+does not have, and a container's log is its stdout.
+
+## Traps
+
+**`dotnet run` is Production without `launchSettings.json`.** The environment comes from there, so a
+missing or renamed profile means development settings are never loaded and the application stops at
+the connection string it cannot find.
+
+**Both applications migrate the same database at startup.** The connection string in compose points
+at this stack's own PostgreSQL, which is empty until something restores into it — it is not the
+original's database. Pointing both at one database is the co-existence arrangement, and it needs the
+migration histories to be identical; see [co-existence.md](co-existence.md).
+
+**Mailpit accepts everything and delivers nothing.** One-time codes in development are read from its
+web interface on 8025, never from a mailbox.

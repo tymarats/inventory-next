@@ -1,0 +1,66 @@
+# `docker compose up` brings up the infrastructure only, which is what running the application from
+# an IDE needs. `docker compose --profile app up` runs the built image beside it.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: inventory-next-db
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: inventory
+      POSTGRES_DB: inventory
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: inventory-next-mailpit
+    ports:
+      # 8025 is the web interface where the one-time codes arrive; 1025 is the relay.
+      - "8025:8025"
+      - "1025:1025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: inventory-next:latest
+    container_name: inventory-next-app
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__PostgreSQL: Host=db;Database=inventory;Username=inventory;Password=inventory
+      Smtp__Host: mailpit
+      Smtp__Port: "1025"
+      Auth__OneTimeCode__Enabled: "true"
+      # Google is off unless both are supplied, which is why the repository carries neither:
+      #   Auth__Google__ClientId=… Auth__Google__ClientSecret=… docker compose --profile app up
+      Auth__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
+      Auth__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
+      DataProtection__KeyRingPath: /var/lib/inventory/keys
+    volumes:
+      - data_protection_keys:/var/lib/inventory/keys
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  # The data protection key ring. Losing it invalidates every session cookie, signing everyone out.
+  data_protection_keys:

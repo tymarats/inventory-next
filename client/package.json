@@ -1,0 +1,36 @@
+{
+    "name": "inventory-client",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "webpack --mode production",
+        "format": "prettier --write \"src/**/*.{ts,tsx,scss,html}\" \"*.{json,js}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,scss,html}\" \"*.{json,js}\"",
+        "start": "webpack serve --mode development",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "cx": "^25.12.1",
+        "cx-react": "^24.7.1",
+        "cx-theme-aquamarine": "^18.7.3",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.26.0",
+        "@babel/preset-typescript": "^7.26.0",
+        "babel-loader": "^9.2.1",
+        "babel-preset-cx-env": "^19.1.0",
+        "css-loader": "^7.1.2",
+        "html-webpack-plugin": "^5.6.3",
+        "mini-css-extract-plugin": "^2.9.2",
+        "prettier": "^3.9.9",
+        "sass": "^1.97.3",
+        "sass-loader": "^16.0.6",
+        "style-loader": "^4.0.0",
+        "typescript": "^5.7.3",
+        "webpack": "^5.97.1",
+        "webpack-cli": "^6.0.1",
+        "webpack-dev-server": "^5.2.0"
+    }
+}

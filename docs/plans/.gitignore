@@ -1,0 +1,4 @@
+# global/ is committed, local/ is this clone's own. Either way plans are disposable:
+# what is worth keeping goes to docs/engineering/.
+local/*
+!local/.gitkeep

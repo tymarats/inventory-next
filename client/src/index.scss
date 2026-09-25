@@ -1,0 +1,99 @@
+:root {
+    color-scheme: light;
+}
+
+html,
+body {
+    margin: 0;
+    height: 100%;
+    font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+    background: #f4f5f7;
+    color: #1d2025;
+}
+
+#app {
+    min-height: 100%;
+}
+
+// The phone is the case to get right, so every screen is a single column that stops growing on a
+// wide display rather than a wide layout that is squeezed on a narrow one.
+.page {
+    box-sizing: border-box;
+    min-height: 100dvh;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.card {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 380px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow:
+        0 1px 2px rgb(0 0 0 / 8%),
+        0 8px 24px rgb(0 0 0 / 6%);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.card p {
+    margin: 0;
+    color: #5b6472;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.error {
+    margin: 0;
+    color: #b3261e;
+    font-size: 14px;
+}
+
+// CxJS layouts are imported widgets, not strings; anything this simple is better as flex.
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.separator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #8b95a3;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.separator::before,
+.separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e2e6eb;
+}
+
+// Tap targets stay at least 44px high on a phone, which the default widget sizing does not guarantee.
+.cxb-button,
+.cxe-field-input {
+    min-height: 44px;
+}

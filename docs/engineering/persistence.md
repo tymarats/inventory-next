@@ -1,0 +1,131 @@
+# Persistence
+
+*Reverse-engineered from the code. It describes what the system does, not decisions recorded when they
+were taken; correct it where it is wrong rather than working around it.*
+
+PostgreSQL through EF Core and Npgsql. `InventoryContext` exposes one `DbSet` per entity and applies
+every `IEntityTypeConfiguration` in the assembly — the entity classes carry no mapping attributes, so
+mapping lives in `Persistence/Configurations/` or nowhere. Entities not named there run entirely on
+convention.
+
+## Naming
+
+Tables and columns are snake_case and unquoted, through `EFCore.NamingConventions`. PostgreSQL folds
+unquoted identifiers to lower case, so this is what lets a hand-written `select * from assets` work.
+
+**A table is named after its entity, not after its `DbSet`**: `person`, not `persons`. `DbSet`s are
+pluralised mechanically — `Informations`, `Confidentialities` — because that is how they read in C#
+and because a mechanical rule needs no arguing about; tables take the CLR name through a loop in
+`OnModelCreating`, so none of that reaches the schema.
+
+**Key, index and foreign-key names still follow the `DbSet`**, giving
+`fk_activation_assets_asset_id` on a table called `asset`. EF derives those before the loop renames
+the table, and every way of correcting them afterwards is worse: clearing them makes EF rebuild them
+after the naming convention has run, so they come back as `FK_Activation_Asset_AssetId`, and setting
+them by hand bypasses the uniquifying EF does at PostgreSQL's 63-character limit, where the two
+foreign keys on `electronic_device_type_electronic_device_tag` then collide. Constraint names are not
+worth that, so they are left alone.
+
+**The convention is applied in `InventoryContext.OnConfiguring`, not beside each `UseNpgsql`.** Three
+places build a context — the app, the integration factory and the migrations fixture — and one that
+configures the model differently from the others builds a model that no longer matches the snapshot.
+
+It is a database convention only: the CLR entities and properties keep their PascalCase names, and
+must, because the audit log has recorded them in every row it has ever written.
+
+## Keys
+
+Primary keys are GUIDs. New ids come from `RT.Comb`'s PostgreSQL provider, registered as
+`ICombProvider`, so they are time-ordered and index-friendly. A service that creates an entity
+allocates the id itself with `combProvider.Create()` rather than letting the database default it —
+which is also what lets an asset and its subtype row share one key before either is inserted.
+
+`Guid.NewGuid()` appears in seed data and in the audit log, where ordering does not matter.
+
+Besides the primary keys, `Asset.InventoryNumber` carries the only unique constraint in the database.
+Codebook names are not unique: whether two vendors may share one is a product question nobody has
+answered, so the schema does not answer it either.
+
+## Migrations
+
+Applied at startup by `Database.Migrate()`, followed by the seeder. Both are skipped in the `Testing`
+environment. There is no separate migration step in deployment: starting a container migrates the
+database it points at.
+
+**The migrations are the original's files, unchanged** — block-scoped namespaces and all, because
+EF Core's generator ignores the file-scoped setting in `.editorconfig` and a converted history would
+diverge from what the next `migrations add` writes. Everything else carried over was converted.
+
+**Their designer files and the model snapshot are not history.** Each carries the CLR type names of
+the model, so renaming a namespace has to reach them: the snapshot is what EF diffs against, and the
+designers will not compile without it. The migration bodies name nothing but tables and columns and
+never change.
+
+**The history is copied from the original application and does not grow here** until that application
+is deleted — see [co-existence.md](co-existence.md). A migration added on one side only would leave
+the two describing different schemas with nothing to say which is right.
+
+## Seeding
+
+`SeedData()` is idempotent per table — each block runs only when its table is empty — and fills the
+codebooks with the values the product expects. It is safe to run against a populated database, but it
+will not repair or update a table that already has any row in it.
+
+## Audit log
+
+`AuditLogInterceptor` is a `SaveChangesInterceptor` registered on the context. For every added,
+modified or deleted entity implementing `IIdentifiableReadOnly<Guid>`, it writes one `AuditLog` row
+holding the table name, the entity id, the signed-in user's email (`"system"` when there is no HTTP
+context), the action, and the complete before/after property set as JSON. `AuditLog` is excluded so
+the log cannot log itself.
+
+Rows written in one `SaveChanges` share a `TransactionId`.
+
+## Traps
+
+**An explicit `ToTable` or `HasColumnName` overrides the convention silently**, leaving one table in
+PascalCase among snake_case neighbours with no error to say so — only a schema comparison finds it.
+Nothing needs one now; adding one means spelling out what the convention would have produced anyway.
+
+**The migrations history table is not covered by any migration.** EF reads it to decide what to apply,
+so the convention renaming its columns locks out every database written before the convention landed.
+`MigrationsHistoryNaming` renames them before `Migrate()`, and the rehearsal script repeats the same
+SQL because `dotnet ef` does not go through startup. Both are deletable once no database predates the
+naming migration.
+
+**Seeded ids are mostly not stable.** Around 300 seeded rows take `Guid.NewGuid()` and a dozen take a
+literal GUID, so most codebook ids differ between every database that was ever seeded separately.
+Nothing may hard-code one, and data cannot be moved between environments by id. The client already
+works around it by looking codebook entries up by text.
+
+**The audit log stores every column of every tracked row, in clear.** That includes licence key
+identifiers and anything in `Information` marked as personal data. It is readable by every signed-in
+user — see [auth.md](auth.md).
+
+**`TransactionId` names something that does not exist.** No code opens a transaction, so the value is
+a fresh GUID per `SaveChanges`. It groups a save, and reading it as a business transaction is wrong.
+
+**The interceptor captures `HttpContext` in its constructor**, so it attributes writes correctly only
+on the request scope that resolved it; anything saving outside a request records `"system"`. Its
+synchronous `SavingChanges` blocks on the async path with `.Result`.
+
+**An instant must be `DateTimeOffset`.** It maps to `timestamp with time zone` and keeps its offset
+all the way to the browser, which is why `AuditLog.TimeCreated` and `Asset.LastModified` display
+correctly. A plain `DateTime` reaches the client with no zone and is read there as local time —
+behind by the viewer's offset.
+
+**A calendar date is `DateOnly` and a `date` column.** Purchase, activation, manufacturing,
+expiration and due dates are the same day in every timezone. Given a `DateTime` they are not: the
+client sends local midnight with its offset, `System.Text.Json` applies it, and a UTC server stores
+the day before at 22:00 or 23:00 — then re-saving the record walks it back again. `DateOnly` has
+nowhere for an offset to be applied, which is the whole of the fix; a server or container timezone
+setting is not.
+
+**Migrations that declare no store type resolve it when they are applied**, which is how the same
+history produced `timestamp without time zone` through the app and `timestamp with time zone` through
+`dotnet ef`. A migration whose column type matters states it, or the two diverge and only
+`MigrationsTests` notices.
+
+**`JsonTextWriter` throws on a type it does not recognise**, rather than falling back to `ToString`.
+`TrackedChanges` converts `DateOnly` by hand for that reason; anything newer than `DateTime` reaching
+an audited entity needs the same, or every save of that entity fails.

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Check formatting
+        run: |
+          dotnet tool restore
+          dotnet csharpier check server
+
+      - name: Build
+        run: dotnet build server/Codaxy.Inventory.slnx --configuration Release
+
+      # The integration tests start PostgreSQL through Testcontainers, so the runner's Docker is what
+      # makes them possible; there is no service container to keep in step with the fixture.
+      - name: Test with coverage
+        run: >
+          dotnet test server/Codaxy.Inventory.slnx --configuration Release --no-build
+          --collect:"XPlat Code Coverage"
+          --results-directory coverage
+          --settings server/coverlet.runsettings
+
+      - name: Enforce the coverage threshold
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:'coverage/**/coverage.cobertura.xml' \
+            -targetdir:coverage/report -reporttypes:TextSummary
+          cat coverage/report/Summary.txt
+          line=$(grep -m1 'Line coverage:' coverage/report/Summary.txt | grep -oE '[0-9]+(\.[0-9]+)?')
+          echo "Line coverage: $line%"
+          awk -v c="$line" 'BEGIN { exit (c + 0 >= 80) ? 0 : 1 }' \
+            || { echo "Line coverage $line% is below the 80% the engineering notes require."; exit 1; }
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run build

@@ -1,0 +1,77 @@
+# Domain
+
+*Reverse-engineered from the code. It describes what the system does, not decisions recorded when they
+were taken; correct it where it is wrong rather than working around it.*
+
+The system tracks assets through their life-cycle, plus the information, licences and contracts
+attached to them.
+
+## Asset and its subtypes
+
+`Asset` carries everything common to a tracked thing: inventory number, name, type, substatus,
+location, holder (`Person`), vendor, business entity, purchase date and value, invoice number, the
+CIA triad and importance, an `Incomplete` flag and `LastModified`.
+
+There are three specialisations — licence, furniture and electronic device — each a **separate table
+sharing the asset's primary key**, in a one-to-one owned by `Asset` and cascade-deleted with it. The
+subtype's `AssetId` *is* its id, so creating one means creating both rows in a single `SaveChanges`,
+and `api/electronicdevices/{id}` and `api/assets/{id}` address the same entity by the same GUID.
+
+Every table has a reader. A fourth specialisation means a table, an API and a screen, not a table
+alone — the schema once carried five more that nothing reached, and they were dropped rather than
+left to imply features that did not exist.
+
+`AssetType` groups under `AssetCategory`; `AssetSubstatus` groups under `AssetStatus`, and an asset
+points at the substatus only, so its status is reached through it.
+
+The client picks the asset type by **name** when creating (`loadAssetType("Electronic Device")`), so
+the seeded type names are part of the contract between client and server, not free text.
+
+## Entities that are not assets
+
+`Information` (with its types, tags and locations), `SoftwareOrService`, `Volume`, `Activation` and
+`MaintenanceContract` are first-class entities with their own ids. None has an inventory number and
+none touches `Sequence`.
+
+Licence seats are modelled by three of them: a `Volume` is a quantity of a `SoftwareOrService` bought
+under a licence, and an `Activation` assigns one seat of a volume to a person, a device (an asset) or
+both. `MaintenanceContract` hangs off an asset, optionally.
+
+**An activation is never edited.** Once created, the only thing that changes is whether it is
+deactivated: `ActivationUpdate` carries a deactivation date and nothing else, and the editor is
+read-only for an existing record. Deactivating is reversible — clearing the date reopens the
+activation, discarding the date it held — so the pair is the whole of its lifecycle. A wrong
+activation is deleted and made again.
+
+## Codebooks
+
+The lookup tables — countries, cities, states, currencies, periods, confidentiality, integrity,
+availability, importance, licence classes/categories/types/models, vendors, manufacturers, persons,
+locations, business entities — are seeded (see [persistence.md](persistence.md)) and edited through
+the codebooks screens. They are referenced by GUID everywhere except where the client resolves one by
+its text, as with importance levels.
+
+## Inventory numbers
+
+A single `Sequence` row holds the next asset inventory number. Only the three services that create
+assets — licence, furniture, electronic device — read it, stamp the asset and increment it. The number
+is `int?` and nullable: assets created outside those paths have none.
+
+## Traps
+
+**Inventory number allocation is not concurrency-safe; the unique index is what saves it.** The
+services read the `Sequence` row, increment a **local copy** with `Interlocked.Increment`, assign it
+back and save. The interlocked call is on a stack variable and protects nothing, and there is no
+transaction or row lock, so two concurrent creates still reach for the same number. The unique index
+on `Asset.InventoryNumber` turns that into a unique violation, which nothing maps, so the loser gets a
+500 carrying the Npgsql message. That is deliberate: a rare loud failure in place of a duplicate that
+cannot be repaired afterwards. Nothing in the codebase opens a transaction at all — an asset and its
+subtype row are consistent only because they save together.
+
+**`Sequence` must already contain a row.** The create paths throw `ItemNotFoundException` when it is
+empty rather than starting at 1.
+
+**Deleting an asset cascades to its subtype row**, by configuration rather than by anything visible at
+the call site. Maintenance contracts are *not* part of that cascade: the foreign key is `ON DELETE
+RESTRICT`, so deleting an asset that has one fails outright. The client deleting an asset's contracts
+first is therefore required, not a nicety — and nothing in the delete path says so.

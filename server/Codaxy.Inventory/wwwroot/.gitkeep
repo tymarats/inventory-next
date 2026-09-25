@@ -1,0 +1,2 @@
+# The built client is copied here by the image; in development it stays empty so the SPA proxy
+# hands over to the dev server instead of serving a stale build.

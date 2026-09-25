@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <!-- Generated code, composition and the persistence carried over from the original are
+               excluded: see docs/engineering/testing.md. -->
+          <Exclude>[*]Codaxy.Inventory.Persistence.Migrations.*,[*]Codaxy.Inventory.Persistence.InventoryContextSeedData,[*]Codaxy.Inventory.Persistence.InventoryContext,[*]Codaxy.Inventory.Db.*</Exclude>
+          <ExcludeByFile>**/Persistence/Migrations/**,**/Program.cs</ExcludeByFile>
+          <SkipAutoProps>true</SkipAutoProps>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
