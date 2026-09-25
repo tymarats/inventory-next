@@ -48,9 +48,14 @@ answered, so the schema does not answer it either.
 
 ## Migrations
 
-Applied at startup by `Database.Migrate()`, followed by the seeder. Both are skipped in the `Testing`
-environment. There is no separate migration step in deployment: starting a container migrates the
-database it points at.
+Applied at startup by `Database.Migrate()`, followed by the seeder. There is no separate migration
+step in deployment: starting a container migrates the database it points at.
+
+**`Database:MigrateOnStartup` governs both**, and defaults to true. It is a setting rather than a
+guess from the environment's name: whether an application brings the database up to date is a
+deployment decision, and an application that knows what "Testing" means has a test harness leaking
+into it. The integration tests turn it off and build their schema from the model; `MigrationsTests`
+is what runs the migrations, against a database of its own.
 
 **The migrations are the original's files, unchanged** — block-scoped namespaces and all, because
 EF Core's generator ignores the file-scoped setting in `.editorconfig` and a converted history would

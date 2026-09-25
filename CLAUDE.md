@@ -17,8 +17,18 @@ recap.
 **Terse is not incomplete.** A gap, a deviation, an unmet criterion, anything that would surprise a
 reviewer: state it — in a line.
 
-This governs everything written: `docs/engineering/`, the plans, commit messages, and what is
-said in the conversation.
+**Write what is, never what changed.** Anything defined against what it replaced — "a setting rather
+than an environment check", "no longer a placeholder", "this used to be in the controller" — reads as
+nonsense to everyone who arrives after, which is everyone. A code comment is where this hides best,
+because it is written in the moment the change is made and nothing ever rereads it against a fresh
+pair of eyes. Say what the thing does and why it is not obvious; the diff already holds what moved,
+and it holds it better.
+
+The exception is a rejected alternative or a trap — what not to reach for, and what breaks. Those are
+still true for someone who arrived today, and the test is exactly that.
+
+This governs everything written: the code and its comments, `docs/engineering/`, the plans, commit
+messages, and what is said in the conversation.
 
 ## Branches
 
@@ -127,12 +137,8 @@ statement worth recording, not what disqualifies it.
 beside the old. If a change makes a sentence untrue, delete it — a decision that lands only in the code
 leaves the document actively wrong, and the next agent undoes what was just decided.
 
-**Write what is, never what changed** — a rule defined against the
-rule it replaced, or a name explained by the name it used to have, tells a reader who never saw either
-nothing. State the rule and the reason it is not obvious; a rename leaves no contrast behind.
-
-**A rejected alternative and a trap are not history** — one says what not to reach for, the other what
-breaks. The test: is the sentence still true for someone who arrived today?
+**Write what is, never what changed** — see [Terseness](#terseness). A rename leaves no contrast
+behind, and a decision is not explained by the decision it replaced.
 
 **Fold defects in as lessons, do not record them as events.** When you fix a bug, the durable
 part is what would stop it being written again: put that in the *Traps* section of the file that

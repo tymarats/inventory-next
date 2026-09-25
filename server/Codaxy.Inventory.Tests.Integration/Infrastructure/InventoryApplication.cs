@@ -42,6 +42,11 @@ public class InventoryApplication : WebApplicationFactory<Program>, IAsyncLifeti
         builder.UseSetting("Auth:OneTimeCode:Enabled", "true");
         builder.UseSetting("DataProtection:KeyRingPath", KeyRingPath);
 
+        // The schema here comes from the model through EnsureCreated, and the codebooks stay empty so
+        // a test seeds exactly what it needs. Migrations are proven against their own database by
+        // MigrationsTests; running them for every fixture would prove the same thing more slowly.
+        builder.UseSetting("Database:MigrateOnStartup", "false");
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<IEmailSender>();

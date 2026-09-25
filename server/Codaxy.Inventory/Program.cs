@@ -3,8 +3,6 @@ using Codaxy.Inventory.Setup;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Logging.AddJsonConsole();
-
 builder
     .Services.AddInventoryOptions(builder.Configuration)
     .AddInventoryPersistence(builder.Configuration)

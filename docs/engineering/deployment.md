@@ -42,10 +42,10 @@ the container does not run as root.
 
 ## Logs
 
-Structured JSON to stdout through `AddJsonConsole`, and one combined line per request through the
-framework's own HTTP logging — method, path, status, duration, no headers and no bodies, because a
-request body here is a sign-in attempt. No logging library: nothing yet needs a sink the framework
-does not have, and a container's log is its stdout.
+The framework's own console logger, in its default format, and one combined line per request through
+its HTTP logging — method, path, status, duration, no headers and no bodies, because a request body
+here is a sign-in attempt. No logging library and no custom formatter: nothing yet needs a sink or a
+shape the framework does not have, and a container's log is its stdout.
 
 ## Traps
 

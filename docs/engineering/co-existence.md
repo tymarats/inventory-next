@@ -31,7 +31,8 @@ must not.
 
 ## Migrating and seeding
 
-Both applications migrate and seed at startup, as the original always did. With the history identical
+Both applications migrate and seed at startup, as the original always did — `Database:MigrateOnStartup`,
+true by default. With the history identical
 on both sides `Migrate()` is a no-op from either, and EF serialises concurrent calls, so neither
 waits on the other beyond that. `SeedData()` fills a table only when it is empty, so whichever starts
 first seeds and the other skips.

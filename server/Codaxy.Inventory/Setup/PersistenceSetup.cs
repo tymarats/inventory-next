@@ -26,13 +26,16 @@ public static class PersistenceSetup
     }
 
     /// <summary>
-    /// Both applications migrate and seed at startup, as the original does; with an identical history
-    /// <c>Migrate()</c> is a no-op from either and EF serialises concurrent calls. See
-    /// docs/engineering/co-existence.md.
+    /// Brings the database up to date and fills the codebooks, governed by
+    /// <c>Database:MigrateOnStartup</c>; seeding follows migrating and the setting covers both.
+    ///
+    /// Two applications share this database and both migrate it at startup. Their histories are
+    /// identical, so <c>Migrate()</c> finds nothing to do from whichever starts second, and EF
+    /// serialises concurrent calls — see docs/engineering/co-existence.md.
     /// </summary>
     public static void MigrateAndSeed(this WebApplication app)
     {
-        if (app.Environment.IsEnvironment("Testing"))
+        if (!app.Configuration.GetValue("Database:MigrateOnStartup", true))
             return;
 
         using var scope = app.Services.CreateScope();
