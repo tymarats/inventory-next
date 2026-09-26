@@ -136,9 +136,19 @@ without borders, so it reads as a caption under the search rather than a second 
 chevrons stay, disabled, when nothing matches, as on a single page; the pager under the list goes. Not
 infinite scroll: it loses the reader's place and cannot reach page 40 without loading 39.
 
-**A list can be opened filtered from the address** — a licence's volume links to
-`~/licenses/activations?licenseId=…&softwareId=…` — read once when the list opens, the filters' names
-filled in once the options arrive. The list does not write its state back to the address.
+**Every list is deep-linkable: its whole state is in the address** — the search, every filter, the
+sort and the page, as query parameters named as the API names them, defaults left out, so a plain list
+is a plain URL and any view of one can be linked, bookmarked, reloaded and returned to. A picker's
+filter travels as its id, never its name, which is looked up once the options arrive; a typed filter
+travels as typed. The list reads the address when it opens and whenever the address changes under it
+— a link to the same list, filtered otherwise — and writes it after every change, the search after
+its pause, **replacing the history entry, never adding one**: Back leaves the list rather than
+stepping through every filter. A record's back link, Cancel, and the return after saving a new record
+or deleting one go to the list as it was left (`listReturn`). Links into a list — a volume's
+activations — use the same parameters. `ListController` in `src/listController.ts` holds all of this
+with the search's pause, the chips, the sort and the latest-request rule; a list declares its path,
+its filters to and from the address, and its fetch. Not a history entry per change: Back would step
+through every filter click before leaving.
 
 **Only the latest request writes.** A controller numbers its requests and drops any answer that is not
 the newest, or a slow early answer lands over a later one.
@@ -151,8 +161,10 @@ that closed it has already left the screen.
 ## Editors
 
 **Every entity has a page of its own**, never a window, **and a row opens it read-only**:
-`~/<item>/:id` shows the record, Delete and Edit in the header beside its name — icons only on a phone,
-named for screen readers; editing is `~/<item>/:id/edit`, Cancel and Save in the card's footer; `new` opens in editing, there being nothing to show yet. A
+`~/<item>/:id` shows the record, **its primary action in the header beside its name and the rest behind
+a ⋮** (`moreActions` in `components/`, a borderless 44px button with a hover tint and a focus ring): Edit visible — or Deactivate, for a record never edited — and
+Duplicate and Delete a click deeper, Delete last and red, so what destroys is never one mis-click
+away; icons only on a phone, named for screen readers; editing is `~/<item>/:id/edit`, Cancel and Save in the card's footer; `new` opens in editing, there being nothing to show yet. A
 record's actions go where the eye starts, a form's commit where the form finishes. Not everyone will be allowed to edit, and
 a record should not change because someone clicked into it. Cancel and a successful Save of an edit
 return to the read-only page; a new record's Save and Cancel return to the list. Both modes are one form, switched by the `ValidationGroup`'s `viewMode`, which every
@@ -307,6 +319,14 @@ must appear in both the header and every script tag. Script hashes in the header
 that a static shell supports. Worth deciding before there are screens, not after.
 
 ## Traps
+
+**Read the address from `$app.url`, never `window.location`**: cx updates the store as it navigates
+and moves the browser's address only once the new page has rendered, so a controller opening on a link
+reads the page it came from in `window.location` — a duplicate opened empty for that.
+
+**A `var()` naming a token that does not exist voids the whole declaration**, silently: `border: 1px
+solid var(--color-typo)` computes to no border, not to a border of some default colour. A name
+carried over from Pulse is the likely typo — check `tailwind.css` before reaching for `!important`.
 
 **Free text is often a URL, which has nowhere to break**: anything showing a typed value in a flex or
 grid cell sets `overflow-wrap: anywhere`, or one long description widens the page on a phone — and a

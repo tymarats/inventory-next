@@ -12,6 +12,8 @@ import {
     ValidationGroup,
 } from "cx/widgets";
 
+import { moreActions } from "../../../../components/moreActions";
+import { listReturn } from "../../../../listAddress";
 import $app from "../../../../model";
 import Controller from "./Controller";
 import m, { devicesText } from "./model";
@@ -30,7 +32,7 @@ export default createFunctionalComponent(() => (
     <cx>
         <div class="page-body page-narrow" controller={Controller}>
             <div class="page-header">
-                <Link href="~/electronic-devices/types" url={$app.url} class="editor-back">
+                <Link href={listReturn("~/electronic-devices/types")} url={$app.url} class="editor-back">
                     <Icon name="previous" class="size-4" />
                     <span text="Types" />
                 </Link>
@@ -39,15 +41,6 @@ export default createFunctionalComponent(() => (
 
                     {/* The record's own actions, beside its name; a phone shows the icons, named for readers. */}
                     <div class="editor-heading-actions" visible={t.viewing}>
-                        <Button
-                            mod="hollow"
-                            class="editor-delete"
-                            onClick="remove"
-                            attrs={{ "aria-label": "Delete", title: "Delete" }}
-                        >
-                            <Icon name="delete" class="size-4" />
-                            <span class="hidden sm:inline" text="Delete" />
-                        </Button>
                         <LinkButton
                             mod="primary"
                             href={expr(t.id, (id) => `~/electronic-devices/types/${id}/edit`)}
@@ -56,6 +49,7 @@ export default createFunctionalComponent(() => (
                             <Icon name="edit" class="size-4" />
                             <span class="hidden sm:inline" text="Edit" />
                         </LinkButton>
+                        {moreActions([{ text: "Delete", icon: "delete", onClick: "remove", danger: true }])}
                     </div>
                 </div>
             </div>
@@ -178,7 +172,9 @@ export default createFunctionalComponent(() => (
                                 mod="hollow"
                                 text="Cancel"
                                 href={expr(t.id, (id) =>
-                                    id ? `~/electronic-devices/types/${id}` : "~/electronic-devices/types",
+                                    id
+                                        ? `~/electronic-devices/types/${id}`
+                                        : listReturn("~/electronic-devices/types"),
                                 )}
                             />
                             <Button mod="primary" text="Save" onClick="save" disabled={t.saving} />

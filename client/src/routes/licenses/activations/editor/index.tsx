@@ -12,6 +12,8 @@ import {
 
 import { dateValue, numberValue } from "../../../../bindings";
 import { expiryClass } from "../../../../licensing";
+import { moreActions } from "../../../../components/moreActions";
+import { listReturn } from "../../../../listAddress";
 import $app from "../../../../model";
 import Controller from "./Controller";
 import m from "./model";
@@ -49,22 +51,13 @@ export default createFunctionalComponent(() => (
     <cx>
         <div class="page-body page-narrow" controller={Controller}>
             <div class="page-header">
-                <Link href="~/licenses/activations" url={$app.url} class="editor-back">
+                <Link href={listReturn("~/licenses/activations")} url={$app.url} class="editor-back">
                     <Icon name="previous" class="size-4" />
                     <span text="Activations" />
                 </Link>
                 <div class="editor-heading">
                     <h1 class="page-title" text={a.title} />
                     <div class="editor-heading-actions" visible={shown}>
-                        <Button
-                            mod="hollow"
-                            class="editor-delete"
-                            onClick="remove"
-                            attrs={{ "aria-label": "Delete", title: "Delete" }}
-                        >
-                            <Icon name="delete" class="size-4" />
-                            <span class="hidden sm:inline" text="Delete" />
-                        </Button>
                         <Button
                             mod="primary"
                             visible={active}
@@ -83,6 +76,7 @@ export default createFunctionalComponent(() => (
                             <Icon name="reactivate" class="size-4" />
                             <span class="hidden sm:inline" text="Reactivate" />
                         </Button>
+                        {moreActions([{ text: "Delete", icon: "delete", onClick: "remove", danger: true }])}
                     </div>
                 </div>
             </div>
@@ -259,7 +253,11 @@ export default createFunctionalComponent(() => (
                             </div>
                         </div>
                         <div class="editor-actions">
-                            <LinkButton mod="hollow" text="Cancel" href="~/licenses/activations" />
+                            <LinkButton
+                                mod="hollow"
+                                text="Cancel"
+                                href={listReturn("~/licenses/activations")}
+                            />
                             <Button mod="primary" text="Activate" onClick="save" disabled={a.saving} />
                         </div>
                     </section>

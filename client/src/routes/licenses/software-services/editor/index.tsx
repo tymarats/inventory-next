@@ -1,6 +1,8 @@
 import { type Config, createFunctionalComponent, expr, falsy, hasValue } from "cx/ui";
 import { Button, Icon, Link, LinkButton, LookupField, TextField, ValidationGroup } from "cx/widgets";
 
+import { moreActions } from "../../../../components/moreActions";
+import { listReturn } from "../../../../listAddress";
 import $app from "../../../../model";
 import Controller from "./Controller";
 import m, { volumesText } from "./model";
@@ -18,22 +20,13 @@ export default createFunctionalComponent(() => (
     <cx>
         <div class="page-body page-narrow" controller={Controller}>
             <div class="page-header">
-                <Link href="~/licenses/software-services" url={$app.url} class="editor-back">
+                <Link href={listReturn("~/licenses/software-services")} url={$app.url} class="editor-back">
                     <Icon name="previous" class="size-4" />
                     <span text="Software & services" />
                 </Link>
                 <div class="editor-heading">
                     <h1 class="page-title" text={e.title} />
                     <div class="editor-heading-actions" visible={e.viewing}>
-                        <Button
-                            mod="hollow"
-                            class="editor-delete"
-                            onClick="remove"
-                            attrs={{ "aria-label": "Delete", title: "Delete" }}
-                        >
-                            <Icon name="delete" class="size-4" />
-                            <span class="hidden sm:inline" text="Delete" />
-                        </Button>
                         <LinkButton
                             mod="primary"
                             href={expr(e.id, (id) => `~/licenses/software-services/${id}/edit`)}
@@ -42,6 +35,7 @@ export default createFunctionalComponent(() => (
                             <Icon name="edit" class="size-4" />
                             <span class="hidden sm:inline" text="Edit" />
                         </LinkButton>
+                        {moreActions([{ text: "Delete", icon: "delete", onClick: "remove", danger: true }])}
                     </div>
                 </div>
             </div>
@@ -150,7 +144,7 @@ export default createFunctionalComponent(() => (
                                 href={expr(e.id, (id) =>
                                     id
                                         ? `~/licenses/software-services/${id}`
-                                        : "~/licenses/software-services",
+                                        : listReturn("~/licenses/software-services"),
                                 )}
                             />
                             <Button mod="primary" text="Save" onClick="save" disabled={e.saving} />
