@@ -127,7 +127,10 @@ pinned: the pane is too tall to hold on screen.
 
 **`components/Pager`** also sits under every list, driven by `pager()` in `src/paging.ts`: the range and
 the total, previous and next, and from `sm` the first, last and current page with a neighbour each side.
-A phone gets "3 / 40" in place of the links. Paging scrolls the page back to the top. In the bar the
+A phone gets "3 / 40" in place of the links. Paging scrolls the page back to the top. **A list
+shows 20 per page** (`pageSize` in `paging.ts`), so a page fits a 1440px-tall display without
+scrolling; with Windows scaling at 125% it still scrolls. The server log's lines are denser, and it
+shows 25. In the bar the
 pager is compact — bare chevrons drawn at 32px, touched at 44 — and the line it sits on is small type
 without borders, so it reads as a caption under the search rather than a second toolbar. The bar's
 chevrons stay, disabled, when nothing matches, as on a single page; the pager under the list goes. Not
@@ -216,6 +219,9 @@ background its `-text` clears 4.5:1 on; `-mark` highlights the words a change to
 
 **Windows are themed in `theme.ts`**: the preset's header takes the accent colour and its footer has
 no top padding, which a coloured footer shows as buttons flush to its top edge; both are set there.
+**A modal dims and blurs the page behind it** — ink at 55% and a 3px blur, fading in over 70ms, in
+`_surfaces.scss`: cx's grey wash leaves the page legible enough to compete. No theme variable covers
+the backdrop.
 
 **Two layers, in this order.** `src/theme.ts` maps CxJS's theme variables onto the tokens and is
 applied by `renderThemeVariables` at startup — colours, type and sizes of widgets belong there. The
