@@ -114,6 +114,7 @@
 // field's text is.
 .editor-value {
     padding: var(--cx-input-padding-y) 0;
+    overflow-wrap: anywhere;
     font-size: var(--cx-input-font-size);
     line-height: var(--cx-input-line-height);
     color: var(--color-ink);
@@ -299,17 +300,137 @@ a.editor-chip:hover {
     background: var(--color-raised);
 }
 
+// An existing volume: what it is on the left, its seats on the right where the eye scans a column of
+// them, its links beneath, remove or undo at the end.
+.volume-row.volume-kept {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+        "summary seats action"
+        "links links action";
+    align-items: center;
+    gap: 0.375rem 1rem;
+
+    > .volume-summary {
+        grid-area: summary;
+    }
+
+    > .volume-seats {
+        grid-area: seats;
+    }
+
+    > .volume-links {
+        grid-area: links;
+    }
+
+    > .cxb-button {
+        grid-area: action;
+    }
+
+    // A phone keeps the name its width: the seats take a line of their own beneath it.
+    @media (max-width: 639.98px) {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "summary action"
+            "seats seats"
+            "links links";
+
+        > .volume-seats {
+            justify-items: stretch;
+        }
+
+        .volume-seats-figure {
+            justify-self: start;
+        }
+    }
+}
+
 .volume-summary {
-    display: flex;
-    flex: 1;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.25rem 0.75rem;
     min-width: 0;
     // A description is often a URL, which has nowhere to break and would widen the page.
     overflow-wrap: anywhere;
+}
+
+.volume-name {
     font-size: 14px;
+    font-weight: 600;
     color: var(--color-ink);
+}
+
+.volume-detail {
+    margin-top: 0.125rem;
+    font-size: 12.5px;
+    color: var(--color-ink-muted);
+}
+
+// "15 / 35 in use" over a thin meter: primary while seats are free, green when every one is used —
+// what a bought seat is for — and red only past the quantity.
+.volume-seats {
+    display: grid;
+    gap: 0.3125rem;
+    min-width: 6.5rem;
+    justify-items: end;
+}
+
+.volume-seats-figure {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+    white-space: nowrap;
+}
+
+.volume-seats-label {
+    margin-left: 0.3125rem;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--color-ink-muted);
+}
+
+.volume-meter {
+    width: 100%;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-line);
+}
+
+.volume-meter-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-primary);
+}
+
+.volume-seats-full {
+    .volume-meter-fill {
+        background: var(--color-success);
+    }
+
+    .volume-seats-figure {
+        color: var(--color-success-text);
+    }
+}
+
+.volume-seats-over {
+    .volume-meter-fill {
+        background: var(--color-danger);
+    }
+
+    .volume-seats-figure {
+        color: var(--color-danger-text);
+    }
+}
+
+.volume-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    min-width: 0;
+
+    &:empty {
+        display: none;
+    }
 }
 
 .volume-activations {
@@ -353,9 +474,14 @@ a.editor-chip:hover {
     border-style: dashed;
     background: transparent;
 
-    .volume-summary > :first-child {
+    .volume-summary,
+    .volume-seats-figure {
         text-decoration: line-through;
         color: var(--color-ink-faint);
+    }
+
+    .volume-meter {
+        opacity: 0.4;
     }
 
     .volume-activations {
@@ -374,4 +500,66 @@ a.editor-chip:hover {
     justify-content: center;
     gap: 0.375rem;
     min-width: 44px;
+}
+
+// A volume row that is a link to its licence, where the software lists its volumes.
+a.volume-row.volume-link {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+        border-color: var(--color-primary-edge);
+        background: var(--color-hover);
+    }
+
+    &:hover .volume-name {
+        color: var(--color-primary-text);
+    }
+}
+
+// The small button beside a web address that opens it in a new tab: drawn at 28px, touched at 44.
+.external-link {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--color-ink-muted);
+    vertical-align: middle;
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: -8px;
+    }
+
+    &:hover {
+        background: var(--color-hover);
+        color: var(--color-primary-text);
+    }
+}
+
+// A value holding a web address, its open button right after it; while editing, after the input,
+// which keeps the line's width.
+.editor-url {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+
+    > :first-child {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    > .cxs-edit-mode {
+        flex: 1;
+    }
+
+    // The form's rule gives every field its line's width; a value read in view mode takes its own.
+    .editor-grid & > .cxs-view-mode {
+        width: auto;
+    }
 }
