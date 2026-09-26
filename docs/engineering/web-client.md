@@ -76,6 +76,13 @@ from `widgetDefaults.ts`, hooked into cx's `overlayDidMount`, so no screen has t
 list also does not pass its scroll on (`overscroll-behavior: contain`). A screen fills
 the content column under a header band (`.page-header`) flush with its top and sides; it never sets
 its own outer padding.
+
+**A page's width is set by its kind, not by the display** — `page-wide` (96rem, Tailwind's `2xl`) for
+lists and logs, `page-narrow` (52rem) for a record's page, in `_shell.scss`. Header band, pinned bars
+and content share the one left-aligned column, so the search is never wider than what it searches;
+a list's columns are capped so a spare width stays in the page, not between the cells. Past the column
+the page fills the viewport's height with the primary glow and dot grid of sign-in, fading in from
+its left: a bare canvas reads as unfinished. The server log follows the same rule — no pane is special.
 Sign-in, outside the shell, is one centred column that stops growing on a wide display.
 
 **Input text is 16px on a touch screen**, 14px elsewhere: iPhone Safari zooms into a focused field
@@ -120,7 +127,8 @@ pinned: the pane is too tall to hold on screen.
 the total, previous and next, and from `sm` the first, last and current page with a neighbour each side.
 A phone gets "3 / 40" in place of the links. Paging scrolls the page back to the top. In the bar the
 pager is compact — bare chevrons drawn at 32px, touched at 44 — and the line it sits on is small type
-without borders, so it reads as a caption under the search rather than a second toolbar. Not
+without borders, so it reads as a caption under the search rather than a second toolbar. The bar's
+chevrons stay, disabled, when nothing matches, as on a single page; the pager under the list goes. Not
 infinite scroll: it loses the reader's place and cannot reach page 40 without loading 39.
 
 **Only the latest request writes.** A controller numbers its requests and drops any answer that is not
@@ -130,6 +138,46 @@ the newest, or a slow early answer lands over a later one.
 `historyEntry()` gives the window an entry in the browser history at the same URL, and steps back over
 it when the window closes any other way. `dismissOnPopState` alone only closes the window — the Back
 that closed it has already left the screen.
+
+## Editors
+
+**Every entity has a page of its own**, never a window, **and a row opens it read-only**:
+`~/<item>/:id` shows the record, Delete and Edit in the header beside its name — icons only on a phone,
+named for screen readers; editing is `~/<item>/:id/edit`, Cancel and Save in a bar pinned to the bottom
+of the viewport, where the form ends; `new` opens in editing, there being nothing to show yet. A
+record's actions go where the eye starts, a form's commit where the form finishes. Not everyone will be allowed to edit, and
+a record should not change because someone clicked into it. Cancel and a successful Save of an edit
+return to the read-only page; a new record's Save and Cancel return to the list. Both modes are one form, switched by the `ValidationGroup`'s `viewMode`, which every
+field inside it follows. The routes come after the menu's own, since a menu item's href can share the
+prefix.
+
+The page is the header band with a back link and the record's name, the form as sections in the
+narrow column, and, while editing, the bar spanning the page with its buttons lined up with the
+form. In view mode a field is text lined up with its label, and a list of values — the types on a tag —
+is chips, each a link to its record.
+
+**Anything that goes somewhere is a link**, an anchor with an address — a row, a chip naming another
+record, a back link, and the New, Edit and Cancel buttons (`LinkButton`) — so it opens in a new tab,
+takes a middle click and can be copied. A button only acts: Save, Delete.
+
+**A question has answers that say what they do** — `confirm()` in `components/confirm.tsx`: "Keep" and
+"Delete tag", never "No" and "Yes", the action last and red when it cannot be undone, the focus on
+declining so Enter never deletes. Deleting asks first and says what goes with it; leaving an edit with
+changes asks "Keep editing" or "Discard changes".
+
+**The route's id is read through `$route`**, declared in the editor's model, and **the address, not the
+mount, says which record and mode are open**: `new` and an id match one route, so saving a new record
+would keep the page and its controller, which therefore reopens on every change of `$app.url`. The server's field
+errors land under their fields through `fieldErrors`; **unsaved changes ask before leaving**, in editing
+only —
+`guardLeaving` in `src/leaveGuard.ts`, cx's navigation confirmation for in-app links and the browser's
+prompt for a reload or a closed tab. Browser Back leaves without asking: cx cannot hold a navigation the
+browser has already made. A save or a delete releases the guard before it navigates.
+
+**A list of records** — `_records.scss` — is a card per row on a phone and columns from `md`, a header
+that sorts on a tap, a row that opens its record, and a *New* button in the toolbar where a screen's
+filters would be. A list cut short — the first three types on a tag, the first fields of an audit
+change — ends in a muted `+N` pill (`record-more`), so the count never reads as another name.
 
 ## Dates
 
@@ -163,6 +211,9 @@ clear 3:1 on the card. The house values for `ink-faint`, `line-strong` and `warn
 darker here. **Text in a status colour uses its `-text` token**, which equals the fill where the fill
 passes and is darker where it does not: `warn` is 3.4:1 as text, `warn-text` 5.1:1. A status's `-wash` is a
 background its `-text` clears 4.5:1 on; `-mark` highlights the words a change touched, under `ink`.
+
+**Windows are themed in `theme.ts`**: the preset's header takes the accent colour and its footer has
+no top padding, which a coloured footer shows as buttons flush to its top edge; both are set there.
 
 **Two layers, in this order.** `src/theme.ts` maps CxJS's theme variables onto the tokens and is
 applied by `renderThemeVariables` at startup — colours, type and sizes of widgets belong there. The
